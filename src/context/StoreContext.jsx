@@ -1,6 +1,7 @@
 import axios from "axios";
 import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { food_list as localFoodList } from '../assets/frontend_assets/assets'; // <-- 1. IMPORT
 
 export const StoreContext = createContext(null);
 
@@ -8,7 +9,7 @@ const StoreContextProvider = (props) => {
   const [cartItems, setCartItems] = useState({});
   const url = "https://food-delivery-backend-5b6g.onrender.com";
   const [token, setToken] = useState("");
-  const [food_list, setFoodList] = useState([]);
+  const [food_list, setFoodList] = useState(localFoodList); // <-- 2. SET INITIAL STATE
 
   const addToCart = async (itemId) => {
     if (!cartItems[itemId]) {
@@ -51,7 +52,9 @@ const StoreContextProvider = (props) => {
     for (const item in cartItems) {
       if (cartItems[item] > 0) {
         let itemInfo = food_list.find((product) => product._id === item);
-        totalAmount += itemInfo.price * cartItems[item];
+        if (itemInfo) {
+          totalAmount += itemInfo.price * cartItems[item];
+        }
       }
     }
     return totalAmount;
@@ -67,6 +70,7 @@ const StoreContextProvider = (props) => {
     return totalItems;
   };
 
+  // This function is no longer needed right now, but we can leave it
   const fetchFoodList = async () => {
     const response = await axios.get(url + "/api/food/list");
     if (response.data.success) {
@@ -77,17 +81,22 @@ const StoreContextProvider = (props) => {
   };
 
   const loadCardData = async (token) => {
-    const response = await axios.post(
-      url + "/api/cart/get",
-      {},
-      { headers: { token } }
-    );
-    setCartItems(response.data.cartData);
+    try {
+      const response = await axios.post(
+        url + "/api/cart/get",
+        {},
+        { headers: { token } }
+      );
+      setCartItems(response.data.cartData || {});
+    } catch (error) {
+      console.error("Failed to load cart data", error);
+      setCartItems({});
+    }
   };
 
   useEffect(() => {
     async function loadData() {
-      await fetchFoodList();
+      // await fetchFoodList(); // <-- 3. COMMENT OUT API CALL
       if (localStorage.getItem("token")) {
         setToken(localStorage.getItem("token"));
         await loadCardData(localStorage.getItem("token"));
