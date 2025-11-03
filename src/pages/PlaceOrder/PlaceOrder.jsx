@@ -21,11 +21,23 @@ const PlaceOrder = () => {
     country: "",
     phone: "",
   });
+  const [orderCount, setOrderCount] = useState(0);
 
   const onChangeHandler = (event) => {
     const name = event.target.name;
     const value = event.target.value;
     setData((data) => ({ ...data, [name]: value }));
+  };
+
+  const fetchOrderCount = async () => {
+    const response = await axios.post(
+      url + "/api/order/userorders",
+      {},
+      { headers: { token } }
+    );
+    if (response.data.success) {
+      setOrderCount(response.data.data.length);
+    }
   };
 
   const placeOrder = async (event) => {
@@ -38,10 +50,33 @@ const PlaceOrder = () => {
         orderItems.push(itemInfo);
       }
     });
+
+    // Check if this is the 6th order (orderCount 5 = 6th order)
+    const isComplementaryOrder = orderCount % 6 === 5;
+    
+    if (isComplementaryOrder && orderItems.length > 0) {
+      // Add complementary item (lowest priced item in cart)
+      const sortedItems = [...orderItems].sort((a, b) => a.price - b.price);
+      const cheapestItem = sortedItems[0];
+      
+      // Create a free duplicate of the cheapest item
+      const complementaryItem = { 
+        ...cheapestItem,
+        name: cheapestItem.name + " (FREE - Loyalty Reward!)",
+        quantity: 1,
+        price: 0
+      };
+      orderItems.push(complementaryItem);
+      toast.success("🎉 Free complementary item added to your order!");
+    }
+
+    // Calculate total amount from items (complementary items have price 0)
+    let totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
     let orderData = {
       address: data,
       items: orderItems,
-      amount: getTotalCartAmount() + 2,
+      amount: totalAmount + 2, // Keep delivery fee
     };
     
     let response= await axios.post(url+"/api/order/place",orderData,{headers:{token}});
@@ -61,6 +96,8 @@ const PlaceOrder = () => {
     else if(getTotalCartAmount()===0){
       toast.error("Please Add Items to Cart");
       navigate("/cart")
+    } else {
+      fetchOrderCount();
     }
   },[token])
   return (
@@ -149,6 +186,12 @@ const PlaceOrder = () => {
       <div className="place-order-right">
         <div className="cart-total">
           <h2>Cart Totals</h2>
+          {orderCount % 6 === 5 && (
+            <div className="loyalty-notification">
+              <p>🎉 <strong>Congratulations!</strong> This is your 6th order!</p>
+              <p>You'll receive a FREE complementary item!</p>
+            </div>
+          )}
           <div>
             <div className="cart-total-details">
               <p>Subtotals</p>

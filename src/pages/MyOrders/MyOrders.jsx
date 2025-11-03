@@ -7,6 +7,7 @@ import { assets } from "../../assets/frontend_assets/assets";
 const MyOrders = () => {
   const { url, token } = useContext(StoreContext);
   const [data, setData] = useState([]);
+  const [orderCount, setOrderCount] = useState(0);
 
   const fetchOrders = async () => {
     const response = await axios.post(
@@ -16,6 +17,7 @@ const MyOrders = () => {
     );
     if (response.data.success) {
       setData(response.data.data);
+      setOrderCount(response.data.data.length);
     }
   };
 
@@ -24,9 +26,33 @@ const MyOrders = () => {
       fetchOrders();
     }
   }, [token]);
+
+  const progressInCycle = orderCount % 6; // 0-5
+  const ordersUntilFree = progressInCycle === 0 ? 6 : 6 - progressInCycle;
+  
   return (
     <div className="my-orders">
       <h2>Orders</h2>
+      
+      {/* Loyalty Program Display */}
+      <div className="loyalty-program">
+        <h3>🎉 Loyalty Reward Program</h3>
+        <p style={{color: '#475569', marginBottom: '15px'}}>Complete 6 orders to earn a FREE complementary item!</p>
+        {progressInCycle === 0 && orderCount > 0 ? (
+          <div className="reward-message">
+            <p>🎁 <strong>Congratulations!</strong> You've earned a complementary food item!</p>
+            <p>Your next order will include a free item.</p>
+          </div>
+        ) : (
+          <div className="reward-progress">
+            <p>Progress: {progressInCycle}/6 orders - <strong>{ordersUntilFree} more order(s) until free item!</strong></p>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{width: `${(progressInCycle / 6) * 100}%`}}></div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="container">
         {data.map((order, index) => {
           return (
