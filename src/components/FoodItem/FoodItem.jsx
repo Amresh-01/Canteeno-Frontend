@@ -9,7 +9,6 @@ const FoodItem = ({ id, name, price, description, image, isSpecial = false, disc
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState("");
   
-  // Calculate display price
   const displayPrice = originalPrice && discount > 0 ? price : price;
   const showOriginalPrice = originalPrice && originalPrice > price;
   
@@ -18,11 +17,9 @@ const FoodItem = ({ id, name, price, description, image, isSpecial = false, disc
   
   const handleAddToCart = () => {
     if (quantity === 0) {
-      // First time adding - show notes modal
       setNotes(existingNotes);
       setShowNotesModal(true);
     } else {
-      // Already in cart - just add quantity
       addToCart(id, existingNotes);
     }
   };
@@ -81,7 +78,6 @@ const FoodItem = ({ id, name, price, description, image, isSpecial = false, disc
         </div>
       </div>
       
-      {/* Notes Modal */}
       {showNotesModal && (
         <div className="notes-modal-overlay" onClick={() => setShowNotesModal(false)}>
           <div className="notes-modal" onClick={(e) => e.stopPropagation()}>

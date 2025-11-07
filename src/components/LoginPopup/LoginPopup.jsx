@@ -28,50 +28,63 @@ const LoginPopup = ({ setShowLogin }) => {
     let requestData = { ...data };
     
     if (userType === "admin") {
-      // Admin login/register - use userId and password
       if (currentState === "Login") {
+        if (!data.userId || !data.password) {
+          toast.error("Please fill in all required fields.");
+          return;
+        }
         newUrl += "/api/admin/login";
-        // For admin login, send userId and password
         requestData = {
-          userId: data.userId,
+          userId: data.userId.trim(),
           password: data.password
         };
       } else {
+        if (!data.username || !data.userId || !data.password) {
+          toast.error("Please fill in all required fields.");
+          return;
+        }
         newUrl += "/api/admin/register";
-        // For admin registration, send name (from username), userId, and password
         requestData = {
-          name: data.username || "",
-          userId: data.userId || "",
-          password: data.password || ""
+          name: data.username.trim(),
+          userId: data.userId.trim(),
+          password: data.password
         };
       }
     } else {
-      // User login/register endpoints - use email and password
       if (currentState === "Login") {
+        if (!data.email || !data.password) {
+          toast.error("Please fill in all required fields.");
+          return;
+        }
         newUrl += "/api/user/login";
-        // For user login, send email and password
         requestData = {
-          email: data.email,
+          email: data.email.trim(),
           password: data.password
         };
       } else {
-        newUrl += "/api/user/register";
-        // Map username to name for backend compatibility
-        if (requestData.username) {
-          requestData.name = requestData.username;
-          delete requestData.username;
+        if (!data.username || !data.email || !data.password) {
+          toast.error("Please fill in all required fields.");
+          return;
         }
-        // Remove userId for user registration
-        delete requestData.userId;
+        newUrl += "/api/user/register";
+        requestData = {
+          name: data.username.trim(),
+          email: data.email.trim(),
+          password: data.password
+        };
       }
     }
     
     try {
-      const response = await axios.post(newUrl, requestData);
+      const response = await axios.post(newUrl, requestData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (response.data.success) {
         setToken(response.data.token);
         localStorage.setItem("token", response.data.token);
-        // Store user type in localStorage and context
         localStorage.setItem("userType", userType);
         setContextUserType(userType);
         toast.success(`${userType === "admin" ? "Admin" : "User"} Login Successfully`);
@@ -83,18 +96,37 @@ const LoginPopup = ({ setShowLogin }) => {
       console.error("Login/Register error:", error);
       console.error("Request URL:", newUrl);
       console.error("Request Data:", requestData);
+      console.error("Response:", error.response?.data);
+      
       if (error.response) {
         const status = error.response.status;
-        const message = error.response.data?.message || `Error: ${status}`;
-        if (status === 404) {
-          toast.error("Registration failed. Please try again later.");
-        } else {
-          toast.error(message);
+        const responseData = error.response.data;
+        
+        switch (status) {
+          case 400:
+            toast.error(responseData?.message || "Invalid request. Please check your input.");
+            break;
+          case 401:
+            toast.error(responseData?.message || "Invalid email or password.");
+            break;
+          case 404:
+            toast.error(responseData?.message || "Endpoint not found. Please contact support.");
+            break;
+          case 500:
+            toast.error(responseData?.message || "Server error. The backend service may be experiencing issues. Please try again later.");
+            console.error("Server error details:", responseData);
+            break;
+          case 502:
+          case 503:
+            toast.error("Service temporarily unavailable. Please try again later.");
+            break;
+          default:
+            toast.error(responseData?.message || `Error ${status}: Something went wrong. Please try again.`);
         }
       } else if (error.request) {
-        toast.error("Network error. Please check your connection.");
+        toast.error("Network error. Unable to reach the server. Please check your connection.");
       } else {
-        toast.error(error.message || "An unexpected error occurred.");
+        toast.error(error.message || "An unexpected error occurred. Please try again.");
       }
     }
   };
@@ -110,7 +142,6 @@ const LoginPopup = ({ setShowLogin }) => {
           />
         </div>
         
-        {/* User Type Selection */}
         <div className="login-popup-user-type">
           <button
             type="button"
@@ -136,10 +167,8 @@ const LoginPopup = ({ setShowLogin }) => {
 
         <div className="login-popup-inputs">
           {userType === "admin" ? (
-            // Admin login/register fields
             <>
               {currentState === "Login" ? (
-                // Admin login - only userId and password
                 <>
                   <input
                     name="userId"
@@ -159,7 +188,6 @@ const LoginPopup = ({ setShowLogin }) => {
                   />
                 </>
               ) : (
-                // Admin registration - username, userId, and password
                 <>
                   <input
                     name="username"
@@ -189,10 +217,8 @@ const LoginPopup = ({ setShowLogin }) => {
               )}
             </>
           ) : (
-            // User login/register fields
             <>
               {currentState === "Login" ? (
-                // User login - email and password
                 <>
                   <input
                     name="email"
@@ -212,7 +238,6 @@ const LoginPopup = ({ setShowLogin }) => {
                   />
                 </>
               ) : (
-                // User registration - username, email, and password
                 <>
                   <input
                     name="username"

@@ -116,7 +116,6 @@ const AdminDashboard = () => {
   );
 };
 
-// ✅ Simplified OrderCard (NO Delivery Info)
 const OrderCard = ({ order, onStatusChange }) => {
   const status = order.status?.toLowerCase() || "pending";
   const isPending = status === "pending" || status === "order placed";

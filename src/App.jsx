@@ -6,6 +6,7 @@ import Cart from "./pages/cart/Cart";
 import PlaceOrder from "./pages/PlaceOrder/PlaceOrder";
 import Footer from "./components/Footer/Footer";
 import LoginPopup from "./components/LoginPopup/LoginPopup";
+import ChatWidget from "./components/ChatWidget/ChatWidget";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Verify from "./pages/Verify/Verify";
@@ -30,6 +31,7 @@ const App = () => {
         </Routes>
       </div>
       <Footer />
+      <ChatWidget />
     </>
   );
 };

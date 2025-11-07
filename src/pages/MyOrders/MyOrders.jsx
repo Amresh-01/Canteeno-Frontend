@@ -34,7 +34,6 @@ const MyOrders = () => {
     <div className="my-orders">
       <h2>Orders</h2>
       
-      {/* Loyalty Program Display */}
       <div className="loyalty-program">
         <h3>🎉 Foodie Rewards</h3>
         <p style={{color: '#475569', marginBottom: '15px'}}>Complete 6 orders to earn a FREE complementary item!</p>

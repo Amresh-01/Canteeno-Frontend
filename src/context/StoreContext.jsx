@@ -2,17 +2,18 @@ import axios from "axios";
 import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { food_list as localFoodList } from '../assets/frontend_assets/assets';
+import { fetchRecommendations } from '../config/recommendationApi';
+import { sendChatMessage, checkChatApiStatus } from '../config/chatApi';
 
 export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
   const [cartItems, setCartItems] = useState({});
-  const url = "https://food-delivery-backend-5b6g.onrender.com";
+  const url = "https://ajay-cafe-1.onrender.com";
   const [token, setToken] = useState("");
   const [userType, setUserType] = useState("user"); // "user" or "admin"
   const [food_list, setFoodList] = useState(localFoodList); 
 
-  // Helper function to get quantity from cart item (supports both old and new format)
   const getCartQuantity = (itemId) => {
     if (!cartItems[itemId]) return 0;
     if (typeof cartItems[itemId] === 'number') {
@@ -21,7 +22,6 @@ const StoreContextProvider = (props) => {
     return cartItems[itemId].quantity || 0;
   };
 
-  // Helper function to get notes from cart item
   const getCartNotes = (itemId) => {
     if (!cartItems[itemId]) return "";
     if (typeof cartItems[itemId] === 'number') {
@@ -30,12 +30,10 @@ const StoreContextProvider = (props) => {
     return cartItems[itemId].notes || "";
   };
 
-  // Helper function to update cart notes
   const updateCartNotes = (itemId, notes) => {
     setCartItems((prev) => {
       const currentItem = prev[itemId];
       if (typeof currentItem === 'number') {
-        // Convert old format to new format
         return { ...prev, [itemId]: { quantity: currentItem, notes: notes } };
       }
       return { ...prev, [itemId]: { ...currentItem, notes: notes } };
@@ -48,10 +46,8 @@ const StoreContextProvider = (props) => {
       if (!currentItem) {
         return { ...prev, [itemId]: { quantity: 1, notes: notes } };
       } else if (typeof currentItem === 'number') {
-        // Convert old format to new format
         return { ...prev, [itemId]: { quantity: currentItem + 1, notes: notes || "" } };
       } else {
-        // If adding more, keep existing notes unless new notes provided
         const existingNotes = currentItem.notes || "";
         return { ...prev, [itemId]: { quantity: currentItem.quantity + 1, notes: notes || existingNotes } };
       }
@@ -76,7 +72,6 @@ const StoreContextProvider = (props) => {
       if (!currentItem) return prev;
       
       if (typeof currentItem === 'number') {
-        // Old format
         const newQuantity = currentItem - 1;
         if (newQuantity <= 0) {
           const { [itemId]: removed, ...rest } = prev;
@@ -84,7 +79,6 @@ const StoreContextProvider = (props) => {
         }
         return { ...prev, [itemId]: newQuantity };
       } else {
-        // New format
         const newQuantity = currentItem.quantity - 1;
         if (newQuantity <= 0) {
           const { [itemId]: removed, ...rest } = prev;
@@ -155,10 +149,8 @@ const StoreContextProvider = (props) => {
 
   useEffect(() => {
     async function loadData() {
-      // await fetchFoodList(); 
       if (localStorage.getItem("token")) {
         setToken(localStorage.getItem("token"));
-        // Load user type from localStorage
         const savedUserType = localStorage.getItem("userType") || "user";
         setUserType(savedUserType);
         await loadCardData(localStorage.getItem("token"));
@@ -183,6 +175,9 @@ const StoreContextProvider = (props) => {
     setToken,
     userType,
     setUserType,
+    fetchRecommendations,
+    sendChatMessage,
+    checkChatApiStatus,
   };
   return (
     <StoreContext.Provider value={contextValue}>

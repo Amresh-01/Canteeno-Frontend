@@ -25,7 +25,6 @@ const Navbar = ({ setShowLogin }) => {
           onClick={(e) => {
             e.preventDefault();
             setMenu("home");
-            // Use replace and add timestamp to force reset even when already on home page
             navigate("/?reset=" + Date.now(), { replace: true, state: { resetCategory: true } });
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
@@ -38,7 +37,6 @@ const Navbar = ({ setShowLogin }) => {
             onClick={(e) => {
               e.preventDefault();
               setMenu("home");
-              // Use replace and add timestamp to force reset even when already on home page
               navigate("/?reset=" + Date.now(), { replace: true, state: { resetCategory: true } });
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
@@ -69,7 +67,6 @@ const Navbar = ({ setShowLogin }) => {
           </a>
         </ul>
         <div className="navbar-right">
-          {/* <img src={assets.search_icon} alt="" /> */}
           <div className="navbar-search-icon">
             <Link to="/cart">
               <img src={assets.basket_icon} alt="" />
