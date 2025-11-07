@@ -9,7 +9,8 @@ const FoodItem = ({ id, name, price, description, image, isSpecial = false, disc
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState("");
   
-  const displayPrice = originalPrice && discount > 0 ? price : price;
+  // Simplified: displayPrice is always price (the ternary was redundant)
+  const displayPrice = price;
   const showOriginalPrice = originalPrice && originalPrice > price;
   
   const quantity = getCartQuantity(id);
