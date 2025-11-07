@@ -1,125 +1,35 @@
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify"; // <-- Added import
 
 export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
-  const url = "https://ajay-cafe-1.onrender.com";
-  const [foodList, setFoodList] = useState([]);
+  const url = "https://ajay-cafe-1.onrender.com"; // <-- Declared once
+  const [foodList, setFoodList] = useState([]); // <-- Declared once
   const [cartItems, setCartItems] = useState({});
-  const url = "https://ajay-cafe-1.onrender.com";
   const [token, setToken] = useState("");
   const [userType, setUserType] = useState("user"); // "user" or "admin"
-  const [food_list, setFoodList] = useState(localFoodList);
 
-  // Helper function to get quantity from cart item (supports both old and new format)
-  const getCartQuantity = (itemId) => {
-    if (!cartItems[itemId]) return 0;
-    if (typeof cartItems[itemId] === "number") {
-      return cartItems[itemId];
-    }
-    return cartItems[itemId].quantity || 0;
-  };
+  // --- API Fetching ---
 
-  // Helper function to get notes from cart item
-  const getCartNotes = (itemId) => {
-    if (!cartItems[itemId]) return "";
-    if (typeof cartItems[itemId] === "number") {
-      return "";
-    }
-  };
-
-  useEffect(() => {
-    fetchFoodList();
-  }, []);
-
-  // --- Cart Management Functions ---
-
-  const addToCart = (itemId, notes) => {
-    setCartItems((prev) => {
-      const item = prev[itemId];
-      if (!item) {
-        return { ...prev, [itemId]: { quantity: 1, notes: notes || "" } };
-      } else {
-        return {
-          ...prev,
-          [itemId]: {
-            quantity: item.quantity + 1,
-            notes: notes !== undefined ? notes : item.notes,
-          },
-        };
-      }
-    });
-  };
-
-  const removeFromCart = (itemId) => {
-    setCartItems((prev) => {
-      const currentItem = prev[itemId];
-      if (!currentItem) return prev;
-
-      if (typeof currentItem === "number") {
-        // Old format
-        const newQuantity = currentItem - 1;
-        if (newQuantity <= 0) {
-          const { [itemId]: removed, ...rest } = prev;
-          return rest;
-        }
-        return { ...prev, [itemId]: newQuantity };
-      } else {
-        const newCart = { ...prev };
-        delete newCart[itemId];
-        return newCart;
-      }
-    });
-    if (token) {
-      const response = await axios.post(
-        url + "/api/cart/remove",
-        { itemId },
-        { headers: { token } }
-      );
-      if (response.data.success) {
-        toast.success("item Removed from Cart");
-      } else {
-        toast.error("Something went wrong");
-      }
-    }
-  };
-
-  const getTotalCartAmount = () => {
-    let totalAmount = 0;
-    for (const itemId in cartItems) {
-      if (cartItems.hasOwnProperty(itemId)) {
-        const itemInfo = foodList.find((product) => product._id === itemId);
-        if (itemInfo) {
-          totalAmount += itemInfo.price * cartItems[itemId].quantity;
-        }
-      }
-    }
-    return totalAmount;
-  };
-
-  // --- THE NEW FUNCTION ---
-  const getTotalCartItems = () => {
-    let totalItems = 0;
-    // Loop over all items in the cart
-    for (const itemId in cartItems) {
-      if (cartItems.hasOwnProperty(itemId)) {
-        // Add the quantity of each item to the total
-        totalItems += cartItems[itemId].quantity;
-      }
-    }
-    return totalItems;
-  };
-
+  // This is your correct function from the VAIBHAVSHUKLA branch
   const fetchFoodList = async () => {
-    const response = await axios.get(url + "/api/food/list");
-    if (response.data.success) {
-      setFoodList(response.data.data);
-    } else {
-      alert("Error! Products are not fetching..");
+    try {
+      const response = await axios.get(`${url}/api/foods/allFoods`);
+      if (response.data.success) {
+        setFoodList(response.data.data);
+      } else {
+        console.error("Error fetching food list:", response.data.message);
+        toast.error("Error fetching food list.");
+      }
+    } catch (error) {
+      console.error("An error occurred while fetching the food list:", error);
+      toast.error("Network error while fetching food.");
     }
   };
 
+  // This is the cart loading function from the main branch
   const loadCardData = async (token) => {
     try {
       const response = await axios.post(
@@ -130,35 +40,199 @@ const StoreContextProvider = (props) => {
       setCartItems(response.data.cartData || {});
     } catch (error) {
       console.error("Failed to load cart data", error);
-      setCartItems({});
+      setCartItems({}); // Default to empty cart on error
     }
   };
 
+  // --- Main data loading on component mount (Combined) ---
+
   useEffect(() => {
     async function loadData() {
-      // await fetchFoodList();
-      if (localStorage.getItem("token")) {
-        setToken(localStorage.getItem("token"));
-        // Load user type from localStorage
+      // We need to fetch the food list regardless of login
+      await fetchFoodList(); // <-- This is now correctly called
+
+      const storedToken = localStorage.getItem("token");
+      if (storedToken) {
+        setToken(storedToken);
         const savedUserType = localStorage.getItem("userType") || "user";
         setUserType(savedUserType);
-        await loadCardData(localStorage.getItem("token"));
+        // Load user's cart only if they are logged in
+        await loadCardData(storedToken);
       }
     }
     loadData();
   }, []);
 
+  // --- Cart Helper Functions (from 'main', they are more robust) ---
+
+  const getCartQuantity = (itemId) => {
+    if (!cartItems[itemId]) return 0;
+    // Supports both old format (number) and new format ({quantity: ...})
+    if (typeof cartItems[itemId] === "number") {
+      return cartItems[itemId];
+    }
+    return cartItems[itemId].quantity || 0;
+  };
+
+  const getCartNotes = (itemId) => {
+    if (!cartItems[itemId]) return "";
+    // Supports both old format (number) and new format ({quantity: ...})
+    if (typeof cartItems[itemId] === "number") {
+      return ""; // Old format had no notes
+    }
+    return cartItems[itemId].notes || "";
+  };
+
+  const updateCartNotes = (itemId, notes) => {
+    setCartItems((prev) => {
+      const currentItem = prev[itemId];
+      if (typeof currentItem === "number") {
+        // Convert old format to new format
+        return { ...prev, [itemId]: { quantity: currentItem, notes: notes } };
+      }
+      // Update notes for new format
+      return { ...prev, [itemId]: { ...currentItem, notes: notes } };
+    });
+    // Note: You may want to add a backend API call here to sync notes
+  };
+
+  // --- Cart Management Functions (from 'main', with API sync) ---
+
+  // This is the correct 'async' version from 'main'
+  const addToCart = async (itemId, notes) => {
+    // Robust local state update from 'main'
+    setCartItems((prev) => {
+      const currentItem = prev[itemId];
+
+      if (!currentItem) {
+        // Not in cart, add new
+        return { ...prev, [itemId]: { quantity: 1, notes: notes || "" } };
+      } else if (typeof currentItem === "number") {
+        // Convert old format
+        return {
+          ...prev,
+          [itemId]: { quantity: currentItem + 1, notes: notes || "" },
+        };
+      } else {
+        // Already in new format, increment quantity
+        const existingNotes = currentItem.notes || "";
+        return {
+          ...prev,
+          [itemId]: {
+            quantity: currentItem.quantity + 1,
+            notes: notes !== undefined ? notes : existingNotes,
+          },
+        };
+      }
+    });
+
+    // API sync from 'main'
+    if (token) {
+      try {
+        const response = await axios.post(
+          url + "/api/cart/add",
+          { itemId },
+          { headers: { token } }
+        );
+        if (response.data.success) {
+          toast.success("Item Added to Cart");
+        } else {
+          toast.error(response.data.message || "Something went wrong");
+        }
+      } catch (error) {
+        toast.error("Failed to update cart");
+      }
+    }
+  };
+
+  // This is the correct 'async' version from 'main'
+  const removeFromCart = async (itemId) => { // <-- Added 'async'
+    // Robust local state update from 'main'
+    setCartItems((prev) => {
+      const currentItem = prev[itemId];
+      if (!currentItem) return prev; // Not in cart
+
+      const currentQuantity = getCartQuantity(itemId); // Use helper
+
+      if (currentQuantity <= 1) {
+        // Remove item from cart
+        const { [itemId]: removed, ...rest } = prev;
+        return rest;
+      } else {
+        // Decrement quantity (handles both formats)
+        const currentNotes = getCartNotes(itemId); // Use helper
+        return {
+          ...prev,
+          [itemId]: { quantity: currentQuantity - 1, notes: currentNotes },
+        };
+      }
+    });
+
+    // API sync from 'main'
+    if (token) {
+      try {
+        const response = await axios.post(
+          url + "/api/cart/remove",
+          { itemId },
+          { headers: { token } }
+        );
+        if (response.data.success) {
+          toast.success("Item Removed from Cart");
+        } else {
+          toast.error(response.data.message || "Something went wrong");
+        }
+      } catch (error) {
+        toast.error("Failed to update cart");
+      }
+    }
+  };
+
+  // --- Cart Total Functions (From 'VAIBHAVSHUKLA', but fixed) ---
+
+  const getTotalCartAmount = () => {
+    let totalAmount = 0;
+    for (const itemId in cartItems) {
+      if (cartItems.hasOwnProperty(itemId)) {
+        const itemInfo = foodList.find((product) => product._id === itemId);
+        if (itemInfo) {
+          // FIXED: Use the helper function to get quantity
+          totalAmount += itemInfo.price * getCartQuantity(itemId);
+        }
+      }
+    }
+    return totalAmount;
+  };
+
+  const getTotalCartItems = () => {
+    let totalItems = 0;
+    for (const itemId in cartItems) {
+      if (cartItems.hasOwnProperty(itemId)) {
+        // FIXED: Use the helper function to get quantity
+        totalItems += getCartQuantity(itemId);
+      }
+    }
+    return totalItems;
+  };
+
+  // --- Final Context Value (Combined) ---
+
   const contextValue = {
     url,
-    food_list: foodList,
+    food_list: foodList, // Pass state as 'food_list'
     cartItems,
     setCartItems,
     addToCart,
     removeFromCart,
     getCartQuantity,
     getCartNotes,
-    getTotalCartAmount,
-    getTotalCartItems, // <-- Now it is being provided
+    updateCartNotes, // From main
+    getTotalCartAmount, // From VAIBHAVSHUKLA
+    getTotalCartItems, // From VAIBHAVSHUKLA
+    token, // From main
+    setToken, // From main
+    userType, // From main
+    setUserType, // From main
+    loadCardData, // From main
   };
 
   return (
