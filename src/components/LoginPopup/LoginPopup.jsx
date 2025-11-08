@@ -27,7 +27,7 @@ const GoogleIcon = () => (
 );
 
 const LoginPopup = ({ setShowLogin }) => {
-  const { url, setToken, setUser } = useContext(StoreContext);
+  const { url, setToken, userType, setUserType } = useContext(StoreContext);
 
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [data, setData] = useState({
@@ -35,19 +35,20 @@ const LoginPopup = ({ setShowLogin }) => {
     email: "",
     password: "",
     role: "customer",
+    userId: "",
   });
 
   const handleChange = (e) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
-  const onLogin = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     let newUrl = url;
     let requestData = { ...data };
     
     if (userType === "admin") {
-      if (currentState === "Login") {
+      if (mode === "login") {
         if (!data.userId || !data.password) {
           toast.error("Please fill in all required fields.");
           return;
@@ -70,7 +71,7 @@ const LoginPopup = ({ setShowLogin }) => {
         };
       }
     } else {
-      if (currentState === "Login") {
+      if (mode === "login") {
         if (!data.email || !data.password) {
           toast.error("Please fill in all required fields.");
           return;
@@ -105,11 +106,11 @@ const LoginPopup = ({ setShowLogin }) => {
         setToken(response.data.token);
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userType", userType);
-        setContextUserType(userType);
-        toast.success(`${userType === "admin" ? "Admin" : "User"} Login Successfully`);
+        setUserType(userType);
+        toast.success(`${userType === "admin" ? "Admin" : "User"} ${mode === "login" ? "Login" : "Registration"} Successfully`);
         setShowLogin(false);
       } else {
-        toast.error(response.data.message || "Login failed. Please try again.");
+        toast.error(response.data.message || `${mode === "login" ? "Login" : "Registration"} failed. Please try again.`);
       }
     } catch (error) {
       console.error("Login/Register error:", error);
@@ -218,106 +219,6 @@ const LoginPopup = ({ setShowLogin }) => {
 
         <div className="divider">or</div>
 
-        <div className="login-popup-inputs">
-          {userType === "admin" ? (
-            <>
-              {currentState === "Login" ? (
-                <>
-                  <input
-                    name="userId"
-                    onChange={onChangeHandler}
-                    value={data.userId}
-                    type="text"
-                    placeholder="User ID"
-                    required
-                  />
-                  <input
-                    name="password"
-                    onChange={onChangeHandler}
-                    value={data.password}
-                    type="password"
-                    placeholder="Password"
-                    required
-                  />
-                </>
-              ) : (
-                <>
-                  <input
-                    name="username"
-                    onChange={onChangeHandler}
-                    value={data.username}
-                    type="text"
-                    placeholder="Username"
-                    required
-                  />
-                  <input
-                    name="userId"
-                    onChange={onChangeHandler}
-                    value={data.userId}
-                    type="text"
-                    placeholder="User ID"
-                    required
-                  />
-                  <input
-                    name="password"
-                    onChange={onChangeHandler}
-                    value={data.password}
-                    type="password"
-                    placeholder="Password"
-                    required
-                  />
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {currentState === "Login" ? (
-                <>
-                  <input
-                    name="email"
-                    onChange={onChangeHandler}
-                    value={data.email}
-                    type="email"
-                    placeholder="Your email"
-                    required
-                  />
-                  <input
-                    name="password"
-                    onChange={onChangeHandler}
-                    value={data.password}
-                    type="password"
-                    placeholder="Your password"
-                    required
-                  />
-                </>
-              ) : (
-                <>
-                  <input
-                    name="username"
-                    onChange={onChangeHandler}
-                    value={data.username}
-                    type="text"
-                    placeholder="Username"
-                    required
-                  />
-                  <input
-                    name="email"
-                    onChange={onChangeHandler}
-                    value={data.email}
-                    type="email"
-                    placeholder="Your email"
-                    required
-                  />
-                  <input
-                    name="password"
-                    onChange={onChangeHandler}
-                    value={data.password}
-                    type="password"
-                    placeholder="Your password"
-                    required
-                  />
-                </>
-              )}
         <button onClick={handleGoogleLogin} className="google-btn">
           <GoogleIcon /> Continue with Google
         </button>
@@ -325,7 +226,7 @@ const LoginPopup = ({ setShowLogin }) => {
         <p className="toggle-text">
           {mode === "login" ? (
             <>
-              Don’t have an account?{" "}
+              Don't have an account?{" "}
               <span onClick={() => setMode("signup")}>Sign up</span>
             </>
           ) : (

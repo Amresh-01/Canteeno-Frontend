@@ -1,6 +1,9 @@
 import axios from "axios";
 
-const CHAT_API_BASE_URL = "https://canteen-recommendation-system.onrender.com";
+// Use proxy in development to avoid CORS issues
+const CHAT_API_BASE_URL = import.meta.env.DEV 
+  ? "/api/chat"  // Use Vite proxy in development
+  : "https://canteen-recommendation-system.onrender.com";  // Direct URL in production
 
 export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
   try {
@@ -13,7 +16,9 @@ export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
       new_message: new_message.trim()
     };
 
-    const fullUrl = `${CHAT_API_BASE_URL}/chat/chat`;
+    const fullUrl = import.meta.env.DEV 
+      ? `${CHAT_API_BASE_URL}/chat`  // Proxy path
+      : `${CHAT_API_BASE_URL}/chat/chat`;  // Direct path
     console.log('💬 [Chat API] Making request to:', fullUrl);
     console.log('📤 [Chat API] Request body:', requestBody);
 
@@ -21,7 +26,8 @@ export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
       headers: {
         'Content-Type': 'application/json',
         'accept': 'application/json'
-      }
+      },
+      withCredentials: false,  // Don't send credentials to avoid CORS issues
     });
 
     console.log('📥 [Chat API] Response status:', response.status);
@@ -123,10 +129,14 @@ export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
 
 export const checkChatApiStatus = async () => {
   try {
-    const response = await axios.get(`${CHAT_API_BASE_URL}/chat/`, {
+    const statusUrl = import.meta.env.DEV 
+      ? `${CHAT_API_BASE_URL}/`  // Proxy path
+      : `${CHAT_API_BASE_URL}/chat/`;  // Direct path
+    const response = await axios.get(statusUrl, {
       headers: {
         'accept': 'application/json'
-      }
+      },
+      withCredentials: false,
     });
 
     return {

@@ -4,15 +4,13 @@ import { food_list as localFoodList } from '../assets/frontend_assets/assets';
 import { fetchRecommendations } from '../config/recommendationApi';
 import { sendChatMessage, checkChatApiStatus } from '../config/chatApi';
 import axios from "axios";
-import { toast } from "react-toastify"; // <-- Added import
 
 export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
-  const url = "https://ajay-cafe-1.onrender.com"; // <-- Declared once
-  const [foodList, setFoodList] = useState([]); // <-- Declared once
-  const [cartItems, setCartItems] = useState({});
   const url = "https://ajay-cafe-1.onrender.com";
+  const [foodList, setFoodList] = useState([]);
+  const [cartItems, setCartItems] = useState({});
   const [token, setToken] = useState("");
   const [userType, setUserType] = useState("user"); // "user" or "admin"
 
@@ -220,45 +218,9 @@ const StoreContextProvider = (props) => {
     return totalItems;
   };
 
-  
-  const fetchFoodList = async () => {
-    const response = await axios.get(url + "/api/food/list");
-    if (response.data.success) {
-      setFoodList(response.data.data);
-    } else {
-      alert("Error! Products are not fetching..");
-    }
-  };
-
-  const loadCardData = async (token) => {
-    try {
-      const response = await axios.post(
-        url + "/api/cart/get",
-        {},
-        { headers: { token } }
-      );
-      setCartItems(response.data.cartData || {});
-    } catch (error) {
-      console.error("Failed to load cart data", error);
-      setCartItems({});
-    }
-  };
-
-  useEffect(() => {
-    async function loadData() {
-      if (localStorage.getItem("token")) {
-        setToken(localStorage.getItem("token"));
-        const savedUserType = localStorage.getItem("userType") || "user";
-        setUserType(savedUserType);
-        await loadCardData(localStorage.getItem("token"));
-      }
-    }
-    loadData();
-  }, []);
-
   const contextValue = {
     url,
-    food_list: foodList, // Pass state as 'food_list'
+    food_list: foodList,
     cartItems,
     setCartItems,
     addToCart,
@@ -266,7 +228,6 @@ const StoreContextProvider = (props) => {
     getCartQuantity,
     getCartNotes,
     updateCartNotes,
-    url,
     token,
     setToken,
     userType,
@@ -274,14 +235,9 @@ const StoreContextProvider = (props) => {
     fetchRecommendations,
     sendChatMessage,
     checkChatApiStatus,
-    updateCartNotes, // From main
-    getTotalCartAmount, // From VAIBHAVSHUKLA
-    getTotalCartItems, // From VAIBHAVSHUKLA
-    token, // From main
-    setToken, // From main
-    userType, // From main
-    setUserType, // From main
-    loadCardData, // From main
+    getTotalCartAmount,
+    getTotalCartItems,
+    loadCardData,
   };
 
   return (
