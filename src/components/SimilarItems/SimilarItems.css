@@ -67,3 +67,18 @@
   background: #ccc;
   transform: none;
 }
+
+.similar-items-section .error {
+  color: #dc2626;
+  text-align: center;
+  padding: 1rem;
+  background-color: #fee2e2;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
+.similar-items-section p {
+  text-align: center;
+  color: #666;
+  padding: 1rem;
+}

@@ -146,7 +146,7 @@ const Home = () => {
         )}
       </div>
 
-      <SimilarItems baseItemName="Burger" top_n={6} />
+      <SimilarItems baseItemName="Burger" limit={6} />
 
       <FoodDisplay category={category} searchQuery={searchQuery} />
       <AppDownload />

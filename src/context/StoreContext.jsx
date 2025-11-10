@@ -18,6 +18,18 @@ const StoreContextProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState({});
   const [token, setToken] = useState("");
   const [userType, setUserType] = useState("user");
+  const [userId, setUserId] = useState("");
+
+  const extractUserIdFromToken = (jwt) => {
+    try {
+      const parts = jwt.split(".");
+      if (parts.length !== 3) return "";
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+      return payload?.id || payload?._id || payload?.userId || "";
+    } catch (_e) {
+      return "";
+    }
+  };
 
   // ===== Load menu from ML API =====
   useEffect(() => {
@@ -99,6 +111,12 @@ const StoreContextProvider = ({ children }) => {
         setToken(stored);
         const savedRole = localStorage.getItem("userType") || "user";
         setUserType(savedRole);
+        // try to restore userId from storage or from token payload
+        const savedUserId = localStorage.getItem("userId") || extractUserIdFromToken(stored);
+        if (savedUserId) {
+          setUserId(savedUserId);
+          localStorage.setItem("userId", savedUserId);
+        }
         await loadCartData(stored);
       }
     })();
@@ -110,16 +128,25 @@ const StoreContextProvider = ({ children }) => {
     const prevNotes = getCartNotes(id);
     setLocalQty(id, newQty, notes || prevNotes); // optimistic
 
-    if (!token) return;
+    if (!token) {
+      // rollback optimistic change if user is not logged in
+      setLocalQty(id, newQty - 1, prevNotes);
+      toast.error("Please login to add items to cart");
+      return;
+    }
     try {
       await axios.post(
         `${url}/api/cart/add`,
-        { foodId: id, quantity: 1 },
+        { foodId: id, quantity: 1, userId: userId || undefined },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (e) {
       setLocalQty(id, newQty - 1, prevNotes);
-      toast.error("Failed to add to cart");
+      const message =
+        e?.response?.data?.message ||
+        (e?.response?.status === 401 ? "Session expired. Please login again." : null) ||
+        "Failed to add to cart";
+      toast.error(message);
     }
   };
 
@@ -135,7 +162,7 @@ const StoreContextProvider = ({ children }) => {
     try {
       await axios.put(
         `${url}/api/cart/updateCart`,
-        { foodId: id, quantity: newQty },
+        { foodId: id, quantity: newQty, userId: userId || undefined },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (e) {
@@ -199,6 +226,8 @@ const StoreContextProvider = ({ children }) => {
     food_list: menuList.length > 0 ? menuList : foodList,
     cartItems,
     setCartItems,
+    userId,
+    setUserId,
     getCartQuantity,
     getCartNotes,
     updateCartNotes,
@@ -220,10 +249,10 @@ const StoreContextProvider = ({ children }) => {
   };
 
   return (
-  <StoreContext.Provider value={contextValue}>
-    {props.children}
-  </StoreContext.Provider>
-);
+    <StoreContext.Provider value={contextValue}>
+      {children}
+    </StoreContext.Provider>
+  );
 };
 
 export default StoreContextProvider;

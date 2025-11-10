@@ -40,26 +40,36 @@ const AdminDashboard = () => {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     if (!token) return;
-    try {
-      // ✅ Correct endpoint & body
-      const res = await axios.post(
-        `/api/order/status/${orderId}`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
 
-      if (res.data?.success) {
-        toast.success(`Order marked as ${newStatus}`);
-        setOrders((prev) =>
-          prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
-        );
-      } else {
-        toast.error(res.data?.message || "Failed to update order status");
+    const headers = { Authorization: `Bearer ${token}` };
+    const candidates = [
+      { method: "post", url: `/api/order/status/${orderId}`, body: { status: newStatus } },
+      { method: "put",  url: `/api/order/status/${orderId}`, body: { status: newStatus } },
+      { method: "patch",url: `/api/order/status/${orderId}`, body: { status: newStatus } },
+      { method: "put",  url: `/api/order/update/${orderId}`, body: { status: newStatus } },
+      { method: "patch",url: `/api/order/${orderId}/status`, body: { status: newStatus } },
+    ];
+
+    let lastError = null;
+    for (const c of candidates) {
+      try {
+        const res = await axios[c.method](c.url, c.body, { headers });
+        if (res.data?.success) {
+          toast.success(`Order marked as ${newStatus}`);
+          setOrders((prev) =>
+            prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
+          );
+          return;
+        }
+        lastError = res?.data?.message || `Failed with ${c.method.toUpperCase()} ${c.url}`;
+      } catch (err) {
+        lastError = err?.response?.data?.message || err?.message;
+        // try the next shape
+        continue;
       }
-    } catch (err) {
-      console.error("Update status error:", err?.response || err);
-      toast.error("Failed to update order status");
     }
+    console.error("Update status error:", lastError);
+    toast.error(lastError || "Failed to update order status");
   };
 
   const handleStatusChange = (orderId, currentStatus) => {

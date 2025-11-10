@@ -15,7 +15,7 @@ const GoogleIcon = () => (
 );
 
 const LoginPopup = ({ setShowLogin }) => {
-  const { setToken, setUserType, loadCardData } = useContext(StoreContext);
+  const { setToken, setUserType, loadCartData, setUserId } = useContext(StoreContext);
   const navigate = useNavigate();
 
   const [mode, setMode] = useState("login");         // "login" | "signup"
@@ -81,9 +81,16 @@ const LoginPopup = ({ setShowLogin }) => {
       localStorage.setItem("userType", finalRole);
       setUserType(finalRole);
 
+      // capture userId if returned
+      const returnedUserId = payload?.user?._id || payload?.userId || payload?._id || null;
+      if (returnedUserId) {
+        setUserId(returnedUserId);
+        localStorage.setItem("userId", returnedUserId);
+      }
+
       // load cart only for non-admin
       if (finalRole !== "admin") {
-        await loadCardData(accessToken);
+        await loadCartData(accessToken);
       }
 
       toast.success(`Logged in as ${finalRole}`);
