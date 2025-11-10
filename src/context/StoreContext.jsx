@@ -220,10 +220,10 @@ const StoreContextProvider = ({ children }) => {
   };
 
   return (
-    <StoreContext.Provider value={contextValue}>
-      {children}
-    </StoreContext.Provider>
-  );
+  <StoreContext.Provider value={contextValue}>
+    {props.children}
+  </StoreContext.Provider>
+);
 };
 
 export default StoreContextProvider;
