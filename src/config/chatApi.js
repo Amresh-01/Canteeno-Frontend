@@ -1,97 +1,11 @@
 import axios from "axios";
 
-// Use proxy in development to avoid CORS issues
-const CHAT_API_BASE_URL = import.meta.env.DEV 
-  ? "/api/chat"  // Use Vite proxy in development
-  : (import.meta.env.VITE_CHAT_BASE || "https://canteen-recommendation-system.onrender.com");  // Direct URL in production
-
-// ---- Lightweight local fallback for development or API downtime ----
-const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
-const useRemoteChatInDev = typeof import.meta !== 'undefined'
-  ? String(import.meta.env?.VITE_USE_REMOTE_CHAT || 'false').toLowerCase() === 'true'
-  : false;
-const BACKEND_URL = "https://ajay-cafe-1.onrender.com";
-
-const normalize = (s = "") =>
-  String(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-const fetchMenuForFallback = async () => {
-  try {
-    const url = `${BACKEND_URL}/api/menu/getMenu`;
-    const res = await axios.get(url, { withCredentials: false });
-    return Array.isArray(res.data) ? res.data : res.data?.data || [];
-  } catch (_e) {
-    return [];
-  }
-};
-
-const tryLocalChatFallback = async (userText) => {
-  const text = normalize(userText);
-  const menu = await fetchMenuForFallback();
-  if (!menu || menu.length === 0) return null;
-
-  // Build quick lookup by normalized name
-  const byName = new Map();
-  for (const item of menu) {
-    const nm = normalize(item?.name || item?.item_name || "");
-    if (nm) byName.set(nm, item);
-  }
-
-  // Heuristics: price queries
-  if (text.includes("price") || text.includes("cost") || text.includes("rate")) {
-    // find the item name by best token overlap
-    let best = null;
-    let bestScore = -1;
-    for (const [nm, it] of byName.entries()) {
-      const words = nm.split(" ");
-      let score = 0;
-      for (const w of words) {
-        if (w && text.includes(w)) score += 1;
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        best = it;
-      }
-    }
-    if (best && bestScore > 0) {
-      const name = best?.name || best?.item_name || "that item";
-      const price = best?.price != null ? `₹${best.price}` : "currently unavailable";
-      return `The price of ${name} is ${price}.`;
-    }
-  }
-
-  // Recommend a few items
-  if (text.includes("recommend") || text.includes("suggest") || text.includes("popular") || text.includes("best")) {
-    const picks = menu.slice(0, 3).map(it => it?.name || it?.item_name).filter(Boolean);
-    if (picks.length > 0) {
-      return `Here are a few popular picks: ${picks.join(", ")}.`;
-    }
-  }
-
-  // Generic menu response
-  if (text.includes("menu") || text.includes("items") || text.includes("food")) {
-    const picks = menu.slice(0, 5).map(it => it?.name || it?.item_name).filter(Boolean);
-    if (picks.length > 0) {
-      return `We have items like ${picks.join(", ")}. Ask me for the price of any item.`;
-    }
-  }
-
-  return "I couldn't reach the chat service right now, but you can ask me about item prices or recommendations from the menu.";
-};
+const CHAT_API_BASE_URL = "https://canteen-recommendation-system.onrender.com";
 
 export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
   try {
     if (!new_message || new_message.trim() === "") {
       throw new Error("new_message is required");
-    }
-    // In development, use local fallback by default to avoid 404/CORS errors.
-    // Set VITE_USE_REMOTE_CHAT=true to force real API calls during dev.
-    if (isDev && !useRemoteChatInDev) {
-      const synthetic = await tryLocalChatFallback(new_message);
-      return {
-        success: true,
-        data: { reply: synthetic, source: "local-fallback" },
-      };
     }
 
     const requestBody = {
@@ -99,39 +13,24 @@ export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
       new_message: new_message.trim()
     };
 
-    // Try multiple known endpoint shapes to improve robustness across environments
-    const candidatePaths = import.meta.env.DEV
-      ? [`${CHAT_API_BASE_URL}/chat`, `${CHAT_API_BASE_URL}`]
-      : [`${CHAT_API_BASE_URL}/chat/chat`, `${CHAT_API_BASE_URL}/chat`, `${CHAT_API_BASE_URL}`];
+    const fullUrl = `${CHAT_API_BASE_URL}/chat/chat`;
+    console.log('💬 [Chat API] Making request to:', fullUrl);
+    console.log('📤 [Chat API] Request body:', requestBody);
 
-    let lastError = null;
-    for (const url of candidatePaths) {
-      try {
-        console.log('💬 [Chat API] Attempting request to:', url);
-        const response = await axios.post(url, requestBody, {
-          headers: {
-            'Content-Type': 'application/json',
-            'accept': 'application/json'
-          },
-          withCredentials: false,
-        });
-        console.log('📥 [Chat API] Response status:', response.status);
-        console.log('📥 [Chat API] Response data:', response.data);
-        return {
-          success: true,
-          data: response.data,
-        };
-      } catch (err) {
-        lastError = err;
-        const status = err.response?.status;
-        console.warn(`⚠️ [Chat API] Attempt to ${url} failed (${status || err.message}). Trying next shape...`);
-        // If network error or 404/405/500, try next candidate
-        continue;
+    const response = await axios.post(fullUrl, requestBody, {
+      headers: {
+        'Content-Type': 'application/json',
+        'accept': 'application/json'
       }
-    }
+    });
 
-    // If all attempts failed, throw last error to be handled below
-    throw lastError || new Error('All chat API endpoint attempts failed');
+    console.log('📥 [Chat API] Response status:', response.status);
+    console.log('📥 [Chat API] Response data:', response.data);
+
+    return {
+      success: true,
+      data: response.data,
+    };
   } catch (error) {
     console.error("❌ [Chat API] Error sending message:", error);
     console.error("❌ [Chat API] Error details:", {
@@ -143,19 +42,6 @@ export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
     });
 
     let errorMessage = "Failed to send message";
-
-    // DEV/Downtime fallback: synthesize a useful answer from menu
-    try {
-      const synthetic = await tryLocalChatFallback(new_message);
-      if (synthetic) {
-        return {
-          success: true,
-          data: { reply: synthetic, source: "local-fallback" },
-        };
-      }
-    } catch (_e) {
-      // ignore fallback error, proceed to detailed error mapping
-    }
 
     if (error.response) {
       const status = error.response.status;
@@ -237,14 +123,10 @@ export const sendChatMessage = async ({ new_message, history = [] } = {}) => {
 
 export const checkChatApiStatus = async () => {
   try {
-    const statusUrl = import.meta.env.DEV 
-      ? `${CHAT_API_BASE_URL}/`  // Proxy path
-      : `${CHAT_API_BASE_URL}/chat/`;  // Direct path
-    const response = await axios.get(statusUrl, {
+    const response = await axios.get(`${CHAT_API_BASE_URL}/chat/`, {
       headers: {
         'accept': 'application/json'
-      },
-      withCredentials: false,
+      }
     });
 
     return {
