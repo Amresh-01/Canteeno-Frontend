@@ -11,7 +11,7 @@ const AdminSidebar = () => {
 
       <ul>
         <li>
-          <NavLink to="/admin/orders">📦 Orders</NavLink>
+          <NavLink to="/admin/dashboard">📦 Orders</NavLink>
         </li>
         <li>
           <NavLink to="/admin/analytics">📊 Analytics</NavLink>
