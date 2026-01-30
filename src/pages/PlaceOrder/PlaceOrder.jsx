@@ -60,7 +60,6 @@ const PlaceOrder = () => {
     const orderData = await createBackendOrder();
 
     const razorpayOrder = orderData.order;
-    const paymentRecord = orderData.payment;
 
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY,
@@ -68,7 +67,7 @@ const PlaceOrder = () => {
       currency: "INR",
       name: "Ajay Cafe",
       description: "Order Payment",
-      order_id: razorpayOrder.id, // FIXED
+      order_id: razorpayOrder.id,
 
       handler: async function (response) {
         toast.success("Payment Success! Confirming order…");
@@ -84,7 +83,7 @@ const PlaceOrder = () => {
         );
 
         if (verify.data.success) {
-          placeCashOrConfirmedOrder("upi");
+          await placeFinalOrder("upi"); 
         } else {
           toast.error("Payment verification failed");
         }
