@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 import TrackOrder from "./pages/TrackOrder/TrackOrder";
 import AdminPage from "./pages/AdminDashboard/AdminPage";
 import AdminAnalytics from "./pages/AdminDashboard/AdminAnalytics";
+import PWAInstallPrompt from "./components/PWAInstallerPrompt";
 
 const App = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -120,7 +121,8 @@ const App = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-
+      '
+      <PWAInstallPrompt />
       <Footer />
       <ChatWidget />
     </>

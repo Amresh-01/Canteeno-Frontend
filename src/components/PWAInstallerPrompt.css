@@ -1,0 +1,87 @@
+/* Floating Popup */
+.pwa-install-box {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 320px;
+
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  border-radius: 18px;
+
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  z-index: 9999;
+
+  animation: slideUp 0.5s ease, fadeIn 0.8s ease;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Title */
+.pwa-install-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+/* Subtitle */
+.pwa-install-sub {
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 18px;
+}
+
+/* Button Container */
+.pwa-install-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Main Install Button */
+.pwa-install-btn {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #ff7a18, #d65b02);
+  color: white;
+  border: none;
+  border-radius: 10px;
+
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(217, 111, 50, 0.4);
+
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.pwa-install-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(217, 111, 50, 0.5);
+}
+
+
+.pwa-cancel-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: 2px solid #d96f32;
+  color: #d96f32;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+
+  transition: 0.25s ease-in-out;
+}
+
+.pwa-cancel-btn:hover {
+  background: #fff1e6;
+}
